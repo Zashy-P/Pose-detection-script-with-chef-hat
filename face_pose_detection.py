@@ -1,6 +1,8 @@
 import cv2
 import mediapipe as mp
 import numpy as np
+import pyvista as pv
+from chef_hat import overlay_chef_hat
 
 # Initialize MediaPipe solutions for pose and face mesh
 mp_pose = mp.solutions.pose
@@ -18,11 +20,17 @@ cap = cv2.VideoCapture(0)
 initial_width = 1280
 initial_height = 720
 
+# Load the 3D chef hat model
+chef_hat = pv.read("Chef Hat.ply")
+
 # Create a named window that can be resized
-cv2.namedWindow('MediaPipe Pose with Face Mesh', cv2.WINDOW_NORMAL)
+cv2.namedWindow('MediaPipe Pose with Face Mesh & Chef Hat', cv2.WINDOW_NORMAL)
 
 # Resize the window initially to the width and height specified
-cv2.resizeWindow('MediaPipe Pose with Face Mesh', initial_width, initial_height)
+cv2.resizeWindow('MediaPipe Pose with Face Mesh & Chef Hat', initial_width, initial_height)
+
+# Flag to toggle the appearance of the hat
+show_hat = False
 
 while cap.isOpened():
     success, image = cap.read()
@@ -51,7 +59,7 @@ while cap.isOpened():
             landmark_drawing_spec=drawing_spec,
             connection_drawing_spec=drawing_spec)
 
-    # Draw the face mesh landmarks on the black image
+      # Draw the face mesh landmarks on the black image and add the chef hat
     if face_results.multi_face_landmarks:
         for face_landmarks in face_results.multi_face_landmarks:
             mp_drawing.draw_landmarks(
@@ -60,13 +68,19 @@ while cap.isOpened():
                 mp_face_mesh.FACEMESH_CONTOURS,
                 landmark_drawing_spec=drawing_spec,
                 connection_drawing_spec=drawing_spec)
+        if show_hat:
+            overlay_chef_hat(output_image, chef_hat, face_landmarks)
 
     # Display the output image with pose and face mesh
-    cv2.imshow('MediaPipe Pose with Face Mesh', output_image)
+    cv2.imshow('MediaPipe Pose with Face Mesh & Chef Hat', output_image)
 
+    key = cv2.waitKey(5) & 0xFF
     # Break the loop when 'ESC' key is pressed
-    if cv2.waitKey(5) & 0xFF == 27:
+    if key == 27:
         break
+    # Toggle the hat by pressing the 'HOME' key
+    elif key == 0: 
+        show_hat = not show_hat
 
 # Release the camera and close all OpenCV windows
 # cap.release()
